@@ -1,0 +1,442 @@
+{
+  "info": {
+    "_postman_id": "b1f4c2a0-9d3e-4f7a-8c21-marketplace01",
+    "name": "Marketplace API",
+    "description": "Educational Practice marketplace backend.\n\nBase URL is the `baseUrl` collection variable (default http://localhost:8080).\n\nRun \"Items > Create item\" first: it saves the new id into the `itemId` collection variable, which every other request reuses. The folders are ordered so the whole collection can also be executed top-to-bottom with the Collection Runner.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Items",
+      "item": [
+        {
+          "name": "Create item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "var body = pm.response.json();",
+                  "if (body && body.id) {",
+                  "    pm.collectionVariables.set(\"itemId\", body.id);",
+                  "    console.log(\"Saved itemId = \" + body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Road bike\",\n  \"description\": \"Lightweight aluminium frame, barely used\",\n  \"price\": 499.99,\n  \"tags\": [\"sport\", \"outdoor\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "items"]
+            },
+            "description": "Create a new item listing. Returns 201 with the created item. The id is stored in the `itemId` variable for the other requests."
+          }
+        },
+        {
+          "name": "Create item - validation error (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Response lists the invalid field\", function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.fieldErrors).to.be.an(\"array\").that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"\",\n  \"description\": \"A blank title triggers a validation error\",\n  \"price\": 19.99,\n  \"tags\": [\"demo\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "items"]
+            },
+            "description": "Shows the centralised validation handling: a blank title returns 400 with a fieldErrors array."
+          }
+        },
+        {
+          "name": "Get item by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "items", "{{itemId}}"]
+            },
+            "description": "Get a single item by its id."
+          }
+        },
+        {
+          "name": "Get item by id - not found (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/items/999999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "items", "999999"]
+            },
+            "description": "Requesting an unknown id returns the standard 404 error body."
+          }
+        },
+        {
+          "name": "Update item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Road bike (updated)\",\n  \"description\": \"Price reduced for a quick sale\",\n  \"price\": 449.00,\n  \"tags\": [\"sport\", \"outdoor\", \"bargain\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "items", "{{itemId}}"]
+            },
+            "description": "Replace the fields of an existing item."
+          }
+        }
+      ],
+      "description": "Item CRUD."
+    },
+    {
+      "name": "Search & Filter",
+      "item": [
+        {
+          "name": "List all (paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/items?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "items"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            },
+            "description": "List every item, paginated. Returns content plus page metadata."
+          }
+        },
+        {
+          "name": "Search by keyword",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/items?keyword=bike",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "items"],
+              "query": [
+                { "key": "keyword", "value": "bike" }
+              ]
+            },
+            "description": "Keyword matches the title or the description (case-insensitive)."
+          }
+        },
+        {
+          "name": "Filter by tags",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/items?tags=sport&tags=outdoor",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "items"],
+              "query": [
+                { "key": "tags", "value": "sport" },
+                { "key": "tags", "value": "outdoor" }
+              ]
+            },
+            "description": "Returns items that have any of the given tags. Repeat the `tags` parameter for multiple values."
+          }
+        },
+        {
+          "name": "Filter by price range",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/items?minPrice=100&maxPrice=500",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "items"],
+              "query": [
+                { "key": "minPrice", "value": "100" },
+                { "key": "maxPrice", "value": "500" }
+              ]
+            },
+            "description": "Filter by an inclusive price range."
+          }
+        },
+        {
+          "name": "Combined search + sort",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/items?keyword=bike&tags=sport&minPrice=100&maxPrice=500&page=0&size=10&sort=price,asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "items"],
+              "query": [
+                { "key": "keyword", "value": "bike" },
+                { "key": "tags", "value": "sport" },
+                { "key": "minPrice", "value": "100" },
+                { "key": "maxPrice", "value": "500" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "sort", "value": "price,asc" }
+              ]
+            },
+            "description": "All filters combine. `sort` accepts `field,direction` (default is `createdAt,desc`)."
+          }
+        }
+      ],
+      "description": "List, search and filter items. All parameters are optional and can be combined."
+    },
+    {
+      "name": "Favorites",
+      "item": [
+        {
+          "name": "Mark item as favorite",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"favorite is true\", function () {",
+                  "    pm.expect(pm.response.json().favorite).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/items/{{itemId}}/favorite",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "items", "{{itemId}}", "favorite"]
+            },
+            "description": "Mark the item as favorite. Returns the updated item."
+          }
+        },
+        {
+          "name": "List favorites",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/favorites",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "favorites"]
+            },
+            "description": "List all favorited items."
+          }
+        },
+        {
+          "name": "Remove item from favorites",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"favorite is false\", function () {",
+                  "    pm.expect(pm.response.json().favorite).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/items/{{itemId}}/favorite",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "items", "{{itemId}}", "favorite"]
+            },
+            "description": "Unmark the item as favorite."
+          }
+        }
+      ],
+      "description": "Mark / unmark items and view the favorites collection."
+    },
+    {
+      "name": "Basket",
+      "item": [
+        {
+          "name": "Add item to basket",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/basket/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "basket", "items", "{{itemId}}"]
+            },
+            "description": "Add an item to the global basket. Returns the basket with its contents and total price."
+          }
+        },
+        {
+          "name": "View basket",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/basket",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "basket"]
+            },
+            "description": "View the current basket contents, item count and total price."
+          }
+        },
+        {
+          "name": "Remove item from basket",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/basket/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "basket", "items", "{{itemId}}"]
+            },
+            "description": "Remove an item from the basket."
+          }
+        }
+      ],
+      "description": "Add / remove items and view the basket."
+    },
+    {
+      "name": "Cleanup",
+      "item": [
+        {
+          "name": "Delete item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 204 No Content\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "items", "{{itemId}}"]
+            },
+            "description": "Delete the item. Returns 204 with no body."
+          }
+        }
+      ],
+      "description": "Removes the item created at the start, so a full collection run leaves no leftover data."
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "itemId", "value": "1" }
+  ]
+}
